@@ -1137,52 +1137,7 @@
         .confirm-actions .btn {
             flex: 1;
         }
-
-        /* Notify Days Control */
-        .notify-days-control {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-shrink: 0;
-        }
-
-        .notify-days-input {
-            width: 60px;
-            padding: 8px 10px;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-subtle);
-            border-radius: var(--radius-sm);
-            color: var(--text-primary);
-            font-family: 'Outfit', sans-serif;
-            font-size: 15px;
-            font-weight: 600;
-            text-align: center;
-            -webkit-appearance: none;
-        }
-
-        .notify-days-input:focus {
-            outline: none;
-            border-color: var(--accent-fresh);
-        }
-
-        .notify-days-save {
-            padding: 8px 14px;
-            background: rgba(74, 222, 128, 0.15);
-            border: 1px solid rgba(74, 222, 128, 0.3);
-            border-radius: var(--radius-sm);
-            color: var(--accent-fresh);
-            font-family: 'Outfit', sans-serif;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            white-space: nowrap;
-        }
-
-        .notify-days-save:active {
-            transform: scale(0.96);
-            background: rgba(74, 222, 128, 0.25);
-        }
+    </style>
 </head>
 <body>
     <div class="bg-pattern"></div>
@@ -1284,25 +1239,13 @@
                         Start Camera
                     </button>
 
-                    <p class="scanner-hint">Position the code within the frame</p>
+                    <p class="scanner-hint">Position the barcode within the frame</p>
                     <div class="barcode-types">
-                        <span>✓ QR Code</span>
-                        <span>✓ UPC-A/E</span>
-                        <span>✓ EAN-13/8</span>
-                        <span>✓ Code 128</span>
+                        <span>✓ UPC-A</span>
+                        <span>✓ UPC-E</span>
+                        <span>✓ EAN-13</span>
+                        <span>✓ EAN-8</span>
                     </div>
-
-                    <div class="manual-entry-divider">
-                        <span>or</span>
-                    </div>
-
-                    <button class="scanner-btn manual" onclick="openAddModal()">
-                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="12" y1="5" x2="12" y2="19"></line>
-                            <line x1="5" y1="12" x2="19" y2="12"></line>
-                        </svg>
-                        Add Item Manually
-                    </button>
                 </div>
             </div>
 
@@ -1328,23 +1271,10 @@
                                 <div class="settings-item-icon">🔔</div>
                                 <div class="settings-item-text">
                                     <h4>Push Notifications</h4>
-                                    <p>Get alerts before items expire</p>
+                                    <p>Get alerts 2 weeks before expiry</p>
                                 </div>
                             </div>
                             <div class="toggle" id="notif-toggle" onclick="toggleNotifications()"></div>
-                        </div>
-                        <div class="settings-item">
-                            <div class="settings-item-info">
-                                <div class="settings-item-icon">⏱️</div>
-                                <div class="settings-item-text">
-                                    <h4>Alert Window</h4>
-                                    <p>Notify me this many days before expiry</p>
-                                </div>
-                            </div>
-                            <div class="notify-days-control">
-                                <input type="number" id="notify-days-input" class="notify-days-input" min="1" max="365" value="14" inputmode="numeric">
-                                <button class="notify-days-save" onclick="saveNotifyDays()">Save</button>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -1386,8 +1316,8 @@
                             <div class="settings-item-info">
                                 <div class="settings-item-icon">ℹ️</div>
                                 <div class="settings-item-text">
-                                    <h4>Code Support</h4>
-                                    <p>QR Code, UPC-A/E, EAN-13/8, Code 128/39</p>
+                                    <h4>Barcode Support</h4>
+                                    <p>UPC-A, UPC-E, EAN-13, EAN-8</p>
                                 </div>
                             </div>
                         </div>
@@ -1525,7 +1455,6 @@
         let scannerRunning = false;
         let currentFilter = 'all';
         let currentView = 'home';
-        let notifyDaysBefore = parseInt(localStorage.getItem('freshkeep-notify-days')) || 14;
 
         // Category Emojis
         const categoryEmojis = {
@@ -1544,7 +1473,6 @@
             setupNavigation();
             setupFilterPills();
             updateNotificationToggle();
-            document.getElementById('notify-days-input').value = notifyDaysBefore;
             
             // Check expirations every hour
             setInterval(checkExpirations, 3600000);
@@ -1650,10 +1578,9 @@
             
             const config = {
                 fps: 10,
-                qrbox: { width: 280, height: 220 },
+                qrbox: { width: 280, height: 160 },
                 aspectRatio: 1.0,
                 formatsToSupport: [
-                    Html5QrcodeSupportedFormats.QR_CODE,
                     Html5QrcodeSupportedFormats.UPC_A,
                     Html5QrcodeSupportedFormats.UPC_E,
                     Html5QrcodeSupportedFormats.EAN_13,
@@ -1890,7 +1817,7 @@
             
             const alertItems = foodItems.filter(item => {
                 const days = getDaysUntilExpiry(item.expiry);
-                return days <= notifyDaysBefore;
+                return days <= 14;
             }).sort((a, b) => new Date(a.expiry) - new Date(b.expiry));
 
             if (alertItems.length === 0) {
@@ -1898,7 +1825,7 @@
                     <div class="empty-state">
                         <div class="empty-state-icon">✨</div>
                         <h3>All clear!</h3>
-                        <p>No items expiring within the next ${notifyDaysBefore} day${notifyDaysBefore !== 1 ? 's' : ''}</p>
+                        <p>No items expiring within the next 2 weeks</p>
                     </div>
                 `;
                 return;
@@ -1949,7 +1876,7 @@
                 return { text: 'Today!', class: 'expiring-soon', badgeClass: 'danger' };
             } else if (days === 1) {
                 return { text: 'Tomorrow', class: 'expiring-soon', badgeClass: 'warning' };
-            } else if (days <= notifyDaysBefore) {
+            } else if (days <= 14) {
                 return { text: `${days}d left`, class: 'expiring-soon', badgeClass: 'warning' };
             } else {
                 return { text: `${days}d`, class: '', badgeClass: 'fresh' };
@@ -1971,7 +1898,7 @@
                 const days = getDaysUntilExpiry(item.expiry);
                 if (days < 0) {
                     expired++;
-                } else if (days <= notifyDaysBefore) {
+                } else if (days <= 14) {
                     expiringSoon++;
                 } else {
                     fresh++;
@@ -1992,7 +1919,7 @@
         function checkExpirations() {
             const alertItems = foodItems.filter(item => {
                 const days = getDaysUntilExpiry(item.expiry);
-                return days <= notifyDaysBefore && days >= 0;
+                return days <= 14 && days >= 0;
             });
 
             // Send browser notification for items expiring soon
@@ -2012,26 +1939,6 @@
                     }
                 });
             }
-        }
-
-        function saveNotifyDays() {
-            const input = document.getElementById('notify-days-input');
-            const val = parseInt(input.value);
-            if (isNaN(val) || val < 1) {
-                showToast('Please enter a valid number of days (min 1)', 'error');
-                input.value = notifyDaysBefore;
-                return;
-            }
-            if (val > 365) {
-                showToast('Maximum is 365 days', 'error');
-                input.value = notifyDaysBefore;
-                return;
-            }
-            notifyDaysBefore = val;
-            localStorage.setItem('freshkeep-notify-days', val);
-            renderAlerts();
-            updateStats();
-            showToast(`Alert window set to ${val} day${val !== 1 ? 's' : ''} ✓`, 'success');
         }
 
         function toggleNotifications() {
