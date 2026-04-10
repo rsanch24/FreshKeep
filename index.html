@@ -1267,10 +1267,27 @@
                                 <div class="settings-item-icon">🔔</div>
                                 <div class="settings-item-text">
                                     <h4>Push Notifications</h4>
-                                    <p>Get alerts 2 weeks before expiry</p>
+                                    <p>Get alerts before items expire</p>
                                 </div>
                             </div>
                             <div class="toggle" id="notif-toggle" onclick="toggleNotifications()"></div>
+                        </div>
+                        <div class="settings-item">
+                            <div class="settings-item-info">
+                                <div class="settings-item-icon">⏱️</div>
+                                <div class="settings-item-text">
+                                    <h4>Alert Window</h4>
+                                    <p>Days before expiry to start alerting</p>
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <input type="number" id="notify-days-input" min="1" max="365" value="14"
+                                    style="width:60px; padding:8px; background:var(--bg-secondary); border:1px solid var(--border-subtle); border-radius:var(--radius-sm); color:var(--text-primary); font-family:'Outfit',sans-serif; font-size:15px; font-weight:600; text-align:center; -webkit-appearance:none;">
+                                <button onclick="saveNotifyDays()"
+                                    style="padding:8px 14px; background:rgba(74,222,128,0.15); border:1px solid rgba(74,222,128,0.3); border-radius:var(--radius-sm); color:var(--accent-fresh); font-family:'Outfit',sans-serif; font-size:13px; font-weight:600; cursor:pointer;">
+                                    Save
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1457,6 +1474,7 @@
         let scannerRunning = false;
         let currentFilter = 'all';
         let currentView = 'home';
+        let notifyDays = parseInt(localStorage.getItem('freshkeep-notify-days')) || 14;
 
         // Category Emojis
         const categoryEmojis = {
@@ -1475,6 +1493,7 @@
             setupNavigation();
             setupFilterPills();
             updateNotificationToggle();
+            document.getElementById('notify-days-input').value = notifyDays;
             
             // Check expirations every hour
             setInterval(checkExpirations, 3600000);
@@ -1863,11 +1882,26 @@
                 return { text: 'Today!', class: 'expiring-soon', badgeClass: 'danger' };
             } else if (days === 1) {
                 return { text: 'Tomorrow', class: 'expiring-soon', badgeClass: 'warning' };
-            } else if (days <= 14) {
+            } else if (days <= notifyDays) {
                 return { text: `${days}d left`, class: 'expiring-soon', badgeClass: 'warning' };
             } else {
                 return { text: `${days}d`, class: '', badgeClass: 'fresh' };
             }
+        }
+
+        function saveNotifyDays() {
+            const input = document.getElementById('notify-days-input');
+            const val = parseInt(input.value);
+            if (isNaN(val) || val < 1 || val > 365) {
+                showToast('Please enter a number between 1 and 365', 'error');
+                input.value = notifyDays;
+                return;
+            }
+            notifyDays = val;
+            localStorage.setItem('freshkeep-notify-days', val);
+            updateStats();
+            renderAlerts();
+            showToast(`Alert window set to ${val} day${val !== 1 ? 's' : ''} ✓`, 'success');
         }
 
         function formatDate(dateStr) {
@@ -1885,7 +1919,7 @@
                 const days = getDaysUntilExpiry(item.expiry);
                 if (days < 0) {
                     expired++;
-                } else if (days <= 14) {
+                } else if (days <= notifyDays) {
                     expiringSoon++;
                 } else {
                     fresh++;
@@ -1906,7 +1940,7 @@
         function checkExpirations() {
             const alertItems = foodItems.filter(item => {
                 const days = getDaysUntilExpiry(item.expiry);
-                return days <= 14 && days >= 0;
+                return days <= notifyDays && days >= 0;
             });
 
             // Send browser notification for items expiring soon
