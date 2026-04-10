@@ -1067,6 +1067,121 @@
             transform: translateX(22px);
         }
 
+        /* Preset Time Selection */
+        .expiry-presets {
+            margin-bottom: 12px;
+        }
+
+        .expiry-presets-label {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 10px;
+            color: var(--text-secondary);
+        }
+
+        .expiry-presets-label .suggested-badge {
+            font-size: 10px;
+            padding: 3px 8px;
+            background: rgba(74, 222, 128, 0.15);
+            color: var(--accent-fresh);
+            border-radius: 50px;
+            font-weight: 600;
+        }
+
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .preset-btn {
+            padding: 12px 8px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-subtle);
+            background: var(--bg-secondary);
+            color: var(--text-secondary);
+            font-family: 'Outfit', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            text-align: center;
+        }
+
+        .preset-btn:active {
+            transform: scale(0.96);
+        }
+
+        .preset-btn:hover {
+            border-color: var(--border-accent);
+            background: var(--bg-card-hover);
+        }
+
+        .preset-btn.active {
+            border-color: var(--accent-fresh);
+            background: rgba(74, 222, 128, 0.15);
+            color: var(--accent-fresh);
+        }
+
+        .preset-btn.suggested {
+            border-color: var(--accent-fresh);
+            position: relative;
+        }
+
+        .preset-btn.suggested::after {
+            content: '✓';
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            width: 16px;
+            height: 16px;
+            background: var(--accent-fresh);
+            color: var(--bg-primary);
+            border-radius: 50%;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .preset-btn .preset-icon {
+            font-size: 18px;
+        }
+
+        .preset-btn .preset-label {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .expiry-divider {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 16px 0;
+        }
+
+        .expiry-divider::before,
+        .expiry-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-subtle);
+        }
+
+        .expiry-divider span {
+            color: var(--text-muted);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
         /* Confirm Dialog */
         .confirm-dialog {
             position: fixed;
@@ -1409,6 +1524,35 @@
                         </div>
                     </div>
 
+                    <div class="form-group expiry-presets" id="expiry-presets-container">
+                        <div class="expiry-presets-label">
+                            <span>Quick Expiry</span>
+                        </div>
+                        <div class="preset-grid">
+                            <button type="button" class="preset-btn" data-days="3" onclick="selectPreset(3)">
+                                <span>3 Days</span>
+                            </button>
+                            <button type="button" class="preset-btn" data-days="7" onclick="selectPreset(7)">
+                                <span>1 Week</span>
+                            </button>
+                            <button type="button" class="preset-btn" data-days="14" onclick="selectPreset(14)">
+                                <span>2 Weeks</span>
+                            </button>
+                            <button type="button" class="preset-btn" data-days="30" onclick="selectPreset(30)">
+                                <span>1 Month</span>
+                            </button>
+                            <button type="button" class="preset-btn" data-days="90" onclick="selectPreset(90)">
+                                <span>3 Months</span>
+                            </button>
+                            <button type="button" class="preset-btn" data-days="180" onclick="selectPreset(180)">
+                                <span>6 Months</span>
+                            </button>
+                        </div>
+                        <div class="expiry-divider">
+                            <span>or pick a date</span>
+                        </div>
+                    </div>
+
                     <div class="form-group">
                         <label class="form-label">Expiration Date *</label>
                         <input type="date" class="form-input" id="food-expiry" required>
@@ -1467,6 +1611,18 @@
             other: '📦'
         };
 
+        // Preset time selections (days)
+        const expiryPresets = [3, 7, 14, 30, 90, 180];
+
+        // Suggested presets by category
+        const categorySuggestions = {
+            dairy: 7,      // 1 week
+            meat: 3,       // 3 days
+            produce: 7,    // 1 week
+            beverages: 30, // 1 month
+            other: 14      // 2 weeks
+        };
+
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             renderFoodList();
@@ -1475,6 +1631,13 @@
             setupNavigation();
             setupFilterPills();
             updateNotificationToggle();
+            
+            // Clear preset active state when manually changing date
+            document.getElementById('food-expiry').addEventListener('input', () => {
+                document.querySelectorAll('.preset-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+            });
             
             // Check expirations every hour
             setInterval(checkExpirations, 3600000);
@@ -1667,6 +1830,34 @@
         }
 
         // Modal Functions
+        function selectPreset(days) {
+            // Calculate the expiry date
+            const date = new Date();
+            date.setDate(date.getDate() + days);
+            const expiryDate = date.toISOString().split('T')[0];
+            
+            // Set the date input
+            document.getElementById('food-expiry').value = expiryDate;
+            
+            // Update button states
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (parseInt(btn.dataset.days) === days) {
+                    btn.classList.add('active');
+                }
+            });
+        }
+
+        function updatePresetSuggestion(category) {
+            // No longer showing suggestions - function kept for compatibility
+        }
+
+        function clearPresetSelection() {
+            document.querySelectorAll('.preset-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+        }
+
         function openAddModal(data = {}) {
             document.getElementById('modal-title').textContent = data.id ? 'Edit Item' : 'Add Item';
             document.getElementById('food-id').value = data.id || '';
@@ -1681,12 +1872,33 @@
             // Show delete button only when editing
             document.getElementById('delete-btn-container').style.display = data.id ? 'flex' : 'none';
             
+            // Clear preset button selection
+            clearPresetSelection();
+            
+            // If editing with existing expiry, check if it matches a preset
+            if (data.expiry) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const expiry = new Date(data.expiry);
+                expiry.setHours(0, 0, 0, 0);
+                const diffDays = Math.round((expiry - today) / (1000 * 60 * 60 * 24));
+                
+                // Check if it roughly matches a preset (within 1 day tolerance)
+                document.querySelectorAll('.preset-btn').forEach(btn => {
+                    const presetDays = parseInt(btn.dataset.days);
+                    if (Math.abs(diffDays - presetDays) <= 1) {
+                        btn.classList.add('active');
+                    }
+                });
+            }
+            
             document.getElementById('add-modal').classList.add('active');
         }
 
         function closeModal() {
             document.getElementById('add-modal').classList.remove('active');
             document.getElementById('food-form').reset();
+            clearPresetSelection();
         }
 
         function saveFood(event) {
